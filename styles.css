@@ -2085,3 +2085,212 @@ a:hover::after {
     }
 }
 
+/* Calendar Widget Section */
+.calendar-widget-section {
+    padding: 60px 20px;
+    background: var(--light-beige);
+    position: relative;
+    z-index: 2;
+}
+
+.calendar-widget {
+    max-width: 450px;
+    margin: 0 auto;
+    background: var(--white);
+    border-radius: 16px;
+    padding: 30px 25px;
+    box-shadow: 
+        0 20px 60px rgba(139, 38, 53, 0.15),
+        0 0 0 2px rgba(212, 175, 55, 0.4);
+    position: relative;
+    animation: fadeInUp 1s ease-out;
+}
+
+.calendar-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.calendar-month {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--romantic-red);
+    margin: 0;
+}
+
+.calendar-body {
+    margin-bottom: 25px;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.weekday {
+    text-align: center;
+    font-family: 'Lato', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-light);
+    padding: 5px 0;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Lato', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-dark);
+    cursor: default;
+    position: relative;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.calendar-day.empty {
+    visibility: hidden;
+}
+
+.calendar-day.highlight {
+    background: var(--romantic-pink);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(139, 38, 53, 0.3);
+    border: 2px solid var(--romantic-red);
+    position: relative;
+}
+
+.calendar-day.highlight::after {
+    content: '♥';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: var(--romantic-red);
+    line-height: 1;
+}
+
+.calendar-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.calendar-btn {
+    flex: 1;
+    padding: 12px 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.calendar-btn-primary {
+    background: var(--deep-red);
+    color: var(--white);
+    box-shadow: 0 3px 12px rgba(139, 38, 53, 0.3);
+}
+
+.calendar-btn-primary:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 5px 20px rgba(139, 38, 53, 0.4);
+}
+
+.calendar-btn-secondary {
+    background: transparent;
+    color: var(--romantic-red);
+    border: 1.5px solid var(--romantic-red);
+}
+
+.calendar-btn-secondary:hover {
+    background: var(--deep-red);
+    color: var(--white);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 5px 20px rgba(139, 38, 53, 0.3);
+}
+
+/* Calendar Widget Responsive */
+@media (max-width: 768px) {
+    .calendar-widget {
+        max-width: 100%;
+        padding: 25px 20px;
+    }
+    
+    .calendar-month {
+        font-size: 20px;
+    }
+    
+    .weekday {
+        font-size: 12px;
+    }
+    
+    .calendar-day {
+        font-size: 14px;
+    }
+    
+    .calendar-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .calendar-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-widget-section {
+        padding: 40px 15px;
+    }
+    
+    .calendar-widget {
+        padding: 20px 15px;
+    }
+    
+    .calendar-month {
+        font-size: 18px;
+    }
+    
+    .calendar-weekdays,
+    .calendar-days {
+        gap: 6px;
+    }
+    
+    .weekday {
+        font-size: 11px;
+        padding: 4px 0;
+    }
+    
+    .calendar-day {
+        font-size: 13px;
+    }
+    
+    .calendar-day.highlight::after {
+        font-size: 12px;
+        bottom: -6px;
+    }
+}
+

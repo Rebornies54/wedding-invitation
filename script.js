@@ -935,3 +935,44 @@ function clearAllRSVPs() {
         showAdminPanel();
     }
 }
+
+// Calendar Widget - Render November 2025
+function renderCalendar() {
+    const calendarDays = document.getElementById('calendarDays');
+    if (!calendarDays) return;
+    
+    // November 2025 - starts on Saturday (T7)
+    // Day 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const firstDayOfMonth = 6; // Saturday (T7) - November 1, 2025
+    const daysInMonth = 30;
+    const highlightDay = 30; // Wedding day
+    
+    // Clear existing content
+    calendarDays.innerHTML = '';
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        calendarDays.appendChild(emptyDay);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = day;
+        
+        // Highlight the wedding day (30th)
+        if (day === highlightDay) {
+            dayElement.classList.add('highlight');
+        }
+        
+        calendarDays.appendChild(dayElement);
+    }
+}
+
+// Initialize calendar on page load
+document.addEventListener('DOMContentLoaded', function() {
+    renderCalendar();
+});
