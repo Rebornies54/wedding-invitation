@@ -2176,50 +2176,9 @@ a:hover::after {
     line-height: 1;
 }
 
-.calendar-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-}
-
-.calendar-btn {
-    flex: 1;
-    padding: 12px 20px;
-    font-family: 'Playfair Display', serif;
-    font-size: 13px;
-    font-weight: 600;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.calendar-btn-primary {
-    background: var(--deep-red);
-    color: var(--white);
-    box-shadow: 0 3px 12px rgba(139, 38, 53, 0.3);
-}
-
-.calendar-btn-primary:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 5px 20px rgba(139, 38, 53, 0.4);
-}
-
-.calendar-btn-secondary {
-    background: transparent;
-    color: var(--romantic-red);
-    border: 1.5px solid var(--romantic-red);
-}
-
-.calendar-btn-secondary:hover {
-    background: var(--deep-red);
-    color: var(--white);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 5px 20px rgba(139, 38, 53, 0.3);
+/* CTA Buttons after Calendar Widget */
+.invitation-card .cta-buttons {
+    margin-top: 30px;
 }
 
 /* Calendar Widget Responsive */
@@ -2241,15 +2200,8 @@ a:hover::after {
         font-size: 14px;
     }
     
-    .calendar-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .calendar-btn {
-        width: 100%;
-        padding: 12px 18px;
-        font-size: 12px;
+    .invitation-card .cta-buttons {
+        margin-top: 25px;
     }
 }
 
@@ -2282,9 +2234,8 @@ a:hover::after {
         bottom: -6px;
     }
     
-    .calendar-btn {
-        padding: 11px 15px;
-        font-size: 11px;
+    .invitation-card .cta-buttons {
+        margin-top: 20px;
     }
 }
 
