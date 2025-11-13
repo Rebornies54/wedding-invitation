@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rsvpForm = document.getElementById('rsvpForm');
     
     if (rsvpForm) {
-        rsvpForm.addEventListener('submit', function(e) {
+        rsvpForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Get form data
