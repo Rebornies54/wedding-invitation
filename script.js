@@ -169,28 +169,49 @@ function updateBackgroundColor() {
 
 // RSVP Data Storage Functions
 function saveRSVPData(data) {
-    // Get existing RSVPs from localStorage
-    let rsvps = JSON.parse(localStorage.getItem('weddingRSVPs') || '[]');
+    // Validate input data
+    if (!data || !data.name || !data.guests || !data.attending) {
+        throw new Error('Missing required RSVP data');
+    }
+    
+    // Get existing RSVPs using the safe getAllRSVPs function
+    let rsvps = getAllRSVPs();
     
     // Add timestamp and ID
     const rsvpEntry = {
         id: Date.now(),
         timestamp: new Date().toISOString(),
         date: new Date().toLocaleString('vi-VN'),
-        name: data.name,
-        guests: parseInt(data.guests),
+        name: String(data.name).trim(),
+        guests: parseInt(data.guests) || 1,
         attending: data.attending,
-        message: data.message || ''
+        message: (data.message || '').trim()
     };
+    
+    // Validate entry
+    if (!rsvpEntry.name || !rsvpEntry.attending) {
+        throw new Error('Invalid RSVP entry data');
+    }
     
     // Add to array
     rsvps.push(rsvpEntry);
     
     // Save back to localStorage
-    localStorage.setItem('weddingRSVPs', JSON.stringify(rsvps));
+    try {
+        localStorage.setItem('weddingRSVPs', JSON.stringify(rsvps));
+        console.log('RSVP saved to localStorage:', rsvpEntry);
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
+        throw new Error('Failed to save RSVP to localStorage: ' + error.message);
+    }
     
     // Also save individual entry for backup
-    localStorage.setItem(`rsvp_${rsvpEntry.id}`, JSON.stringify(rsvpEntry));
+    try {
+        localStorage.setItem(`rsvp_${rsvpEntry.id}`, JSON.stringify(rsvpEntry));
+    } catch (error) {
+        console.warn('Could not save individual RSVP entry:', error);
+        // Non-critical, continue
+    }
     
     return rsvpEntry;
 }
@@ -330,10 +351,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 message: formData.get('message')
             };
             
+            // Validate form data before saving
+            if (!data.name || !data.guests || !data.attending) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+                return;
+            }
+            
             // Save to localStorage
             try {
+                console.log('Attempting to save RSVP:', data);
                 const savedRSVP = saveRSVPData(data);
-                console.log('RSVP saved:', savedRSVP);
+                console.log('RSVP saved successfully:', savedRSVP);
+                
+                // Verify it was saved
+                const allRSVPs = getAllRSVPs();
+                console.log('Total RSVPs in storage:', allRSVPs.length);
+                console.log('All RSVPs:', allRSVPs);
                 
                 // Show petals animation
                 createPetalsAnimation();
@@ -350,7 +383,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateAdminPanel();
             } catch (error) {
                 console.error('Error saving RSVP:', error);
-                alert('Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                    data: data
+                });
+                alert('Có lỗi xảy ra khi lưu thông tin: ' + error.message + '\nVui lòng thử lại hoặc liên hệ với chúng tôi.');
             }
         });
     }
@@ -924,6 +962,7 @@ function showAdminPanel() {
             <div class="admin-actions">
                 <button class="admin-btn" onclick="exportRSVPsToJSON()">📥 Xuất JSON</button>
                 <button class="admin-btn" onclick="exportRSVPsToCSV()">📊 Xuất CSV</button>
+                <button class="admin-btn" onclick="debugLocalStorage()" style="background: #6c757d;">🔍 Debug</button>
                 <button class="admin-btn" onclick="clearAllRSVPs()" style="background: #dc3545;">🗑️ Xóa tất cả</button>
             </div>
             <div class="admin-list">
@@ -955,6 +994,52 @@ function updateAdminPanel() {
         panel.remove();
         showAdminPanel();
     }
+}
+
+function debugLocalStorage() {
+    console.log('=== LocalStorage Debug Info ===');
+    console.log('localStorage available:', typeof(Storage) !== "undefined");
+    
+    // Check main RSVP array
+    const mainData = localStorage.getItem('weddingRSVPs');
+    console.log('weddingRSVPs key exists:', !!mainData);
+    console.log('weddingRSVPs raw data:', mainData);
+    
+    try {
+        const parsed = JSON.parse(mainData || '[]');
+        console.log('weddingRSVPs parsed:', parsed);
+        console.log('weddingRSVPs count:', parsed.length);
+    } catch (e) {
+        console.error('Error parsing weddingRSVPs:', e);
+    }
+    
+    // Check individual entries
+    const individualEntries = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rsvp_')) {
+            try {
+                const entry = JSON.parse(localStorage.getItem(key));
+                individualEntries.push({ key, entry });
+            } catch (e) {
+                console.error('Error parsing entry:', key, e);
+            }
+        }
+    }
+    console.log('Individual RSVP entries:', individualEntries);
+    console.log('Individual entries count:', individualEntries.length);
+    
+    // Get all RSVPs using getAllRSVPs
+    const allRSVPs = getAllRSVPs();
+    console.log('getAllRSVPs() result:', allRSVPs);
+    console.log('getAllRSVPs() count:', allRSVPs.length);
+    
+    // Get stats
+    const stats = getRSVPStats();
+    console.log('RSVP Stats:', stats);
+    
+    console.log('=== End Debug Info ===');
+    alert('Debug info đã được log vào Console (F12).\n\nTổng số RSVP: ' + allRSVPs.length + '\nSẽ tham dự: ' + stats.attending + '\nKhông tham dự: ' + stats.notAttending);
 }
 
 function clearAllRSVPs() {
