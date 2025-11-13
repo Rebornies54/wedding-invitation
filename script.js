@@ -168,14 +168,12 @@ function updateBackgroundColor() {
 }
 
 // RSVP Data Storage Functions
-function saveRSVPData(data) {
+// Save to both server (centralized) and localStorage (backup)
+async function saveRSVPData(data) {
     // Validate input data
     if (!data || !data.name || !data.guests || !data.attending) {
         throw new Error('Missing required RSVP data');
     }
-    
-    // Get existing RSVPs using the safe getAllRSVPs function
-    let rsvps = getAllRSVPs();
     
     // Add timestamp and ID
     const rsvpEntry = {
@@ -193,16 +191,37 @@ function saveRSVPData(data) {
         throw new Error('Invalid RSVP entry data');
     }
     
-    // Add to array
-    rsvps.push(rsvpEntry);
-    
-    // Save back to localStorage
+    // Try to save to server first (centralized storage)
     try {
-        localStorage.setItem('weddingRSVPs', JSON.stringify(rsvps));
-        console.log('RSVP saved to localStorage:', rsvpEntry);
+        const response = await fetch('/api/save-rsvp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ RSVP saved to server:', result);
+            rsvpEntry.id = result.data?.id || rsvpEntry.id; // Use server ID if provided
+        } else {
+            console.warn('⚠️ Failed to save to server, using localStorage only');
+        }
     } catch (error) {
-        console.error('Error saving to localStorage:', error);
-        throw new Error('Failed to save RSVP to localStorage: ' + error.message);
+        console.warn('⚠️ Server unavailable, using localStorage only:', error);
+        // Continue with localStorage as fallback
+    }
+    
+    // Always save to localStorage as backup
+    try {
+        let rsvps = getAllRSVPsSync();
+        rsvps.push(rsvpEntry);
+        localStorage.setItem('weddingRSVPs', JSON.stringify(rsvps));
+        console.log('✅ RSVP saved to localStorage:', rsvpEntry);
+    } catch (error) {
+        console.error('❌ Error saving to localStorage:', error);
+        throw new Error('Failed to save RSVP: ' + error.message);
     }
     
     // Also save individual entry for backup
@@ -216,7 +235,29 @@ function saveRSVPData(data) {
     return rsvpEntry;
 }
 
-function getAllRSVPs() {
+// Get RSVPs from server (centralized) with localStorage fallback
+async function getAllRSVPs() {
+    // Try to get from server first
+    try {
+        const response = await fetch('/api/get-rsvps');
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && Array.isArray(result.data)) {
+                console.log('✅ Loaded RSVPs from server:', result.data.length);
+                // Also sync to localStorage as backup
+                try {
+                    localStorage.setItem('weddingRSVPs', JSON.stringify(result.data));
+                } catch (e) {
+                    console.warn('Could not sync to localStorage:', e);
+                }
+                return result.data;
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Server unavailable, using localStorage:', error);
+    }
+    
+    // Fallback to localStorage
     try {
         const data = localStorage.getItem('weddingRSVPs');
         if (!data) return [];
@@ -248,8 +289,21 @@ function getAllRSVPs() {
     }
 }
 
-function getRSVPStats() {
-    const rsvps = getAllRSVPs();
+// Synchronous version for backward compatibility (uses localStorage only)
+function getAllRSVPsSync() {
+    try {
+        const data = localStorage.getItem('weddingRSVPs');
+        if (!data) return [];
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Error reading RSVPs from localStorage:', error);
+        return [];
+    }
+}
+
+async function getRSVPStats() {
+    const rsvps = await getAllRSVPs();
     const attending = rsvps.filter(r => r.attending === 'yes');
     const notAttending = rsvps.filter(r => r.attending === 'no');
     const totalGuests = attending.reduce((sum, r) => {
@@ -265,8 +319,8 @@ function getRSVPStats() {
     };
 }
 
-function exportRSVPsToJSON() {
-    const rsvps = getAllRSVPs();
+async function exportRSVPsToJSON() {
+    const rsvps = await getAllRSVPs();
     const dataStr = JSON.stringify(rsvps, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -277,8 +331,8 @@ function exportRSVPsToJSON() {
     URL.revokeObjectURL(url);
 }
 
-function exportRSVPsToCSV() {
-    const rsvps = getAllRSVPs();
+async function exportRSVPsToCSV() {
+    const rsvps = await getAllRSVPs();
     
     // Ask user to choose delimiter
     const delimiterChoice = confirm(
@@ -360,14 +414,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Save to localStorage
+            // Save to server and localStorage
             try {
                 console.log('Attempting to save RSVP:', data);
-                const savedRSVP = saveRSVPData(data);
+                const savedRSVP = await saveRSVPData(data);
                 console.log('RSVP saved successfully:', savedRSVP);
                 
                 // Verify it was saved
-                const allRSVPs = getAllRSVPs();
+                const allRSVPs = await getAllRSVPs();
                 console.log('✅ Total RSVPs in storage:', allRSVPs.length);
                 console.log('✅ All RSVPs:', allRSVPs);
                 console.log('✅ Latest RSVP ID:', savedRSVP.id);
@@ -385,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update admin panel if visible
                 console.log('🔄 Attempting to update admin panel...');
-                updateAdminPanel();
+                await updateAdminPanel();
                 console.log('✅ Admin panel update called');
             } catch (error) {
                 console.error('Error saving RSVP:', error);
@@ -910,12 +964,12 @@ function initAdminPanel() {
     });
 }
 
-function showAdminLogin() {
+async function showAdminLogin() {
     const password = prompt('Nhập mật khẩu để xem danh sách RSVP:');
     const correctPassword = getAdminPassword();
     
     if (password === correctPassword) {
-        showAdminPanel();
+        await showAdminPanel();
     } else if (password) {
         alert('Mật khẩu không đúng!');
     }
@@ -929,15 +983,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showAdminPanel() {
+async function showAdminPanel() {
     // Remove existing panel if any
     const existingPanel = document.getElementById('adminPanel');
     if (existingPanel) {
         existingPanel.remove();
     }
     
-    // Always fetch fresh data
-    const rsvps = getAllRSVPs();
+    // Always fetch fresh data from server
+    const rsvps = await getAllRSVPs();
     console.log('=== Admin Panel Debug ===');
     console.log('Total RSVPs loaded:', rsvps.length);
     console.log('RSVPs data:', JSON.stringify(rsvps, null, 2));
@@ -970,7 +1024,7 @@ function showAdminPanel() {
         return timeB - timeA; // Newest first
     });
     
-    const stats = getRSVPStats();
+    const stats = await getRSVPStats();
     console.log('RSVP Stats:', stats);
     console.log('=== End Admin Panel Debug ===');
     
@@ -983,8 +1037,8 @@ function showAdminPanel() {
                 <h2>📋 Danh Sách RSVP</h2>
                 <button class="admin-close" onclick="this.closest('#adminPanel').remove()">×</button>
             </div>
-            <div style="padding: 10px 20px; background: #fff3cd; border-bottom: 1px solid #ffc107; font-size: 12px; color: #856404;">
-                💡 <strong>Lưu ý:</strong> Dữ liệu được lưu trong localStorage của từng tab. Mỗi tab có dữ liệu riêng. Nếu không thấy RSVP mới, hãy click nút "🔄 Làm mới".
+            <div style="padding: 10px 20px; background: #d1ecf1; border-bottom: 1px solid #0c5460; font-size: 12px; color: #0c5460;">
+                💡 <strong>Lưu ý:</strong> Dữ liệu được lưu tập trung trên server. Tất cả người dùng đều thấy cùng dữ liệu. Nếu không thấy RSVP mới, hãy click nút "🔄 Làm mới".
             </div>
             <div class="admin-stats">
                 <div class="stat-item">
@@ -1005,11 +1059,11 @@ function showAdminPanel() {
                 </div>
             </div>
             <div class="admin-actions">
-                <button class="admin-btn" onclick="showAdminPanel()" style="background: #28a745;">🔄 Làm mới</button>
-                <button class="admin-btn" onclick="exportRSVPsToJSON()">📥 Xuất JSON</button>
-                <button class="admin-btn" onclick="exportRSVPsToCSV()">📊 Xuất CSV</button>
+                <button class="admin-btn" onclick="refreshAdminPanel()" style="background: #28a745;">🔄 Làm mới</button>
+                <button class="admin-btn" onclick="handleExportJSON()">📥 Xuất JSON</button>
+                <button class="admin-btn" onclick="handleExportCSV()">📊 Xuất CSV</button>
                 <button class="admin-btn" onclick="debugLocalStorage()" style="background: #6c757d;">🔍 Debug</button>
-                <button class="admin-btn" onclick="clearAllRSVPs()" style="background: #dc3545;">🗑️ Xóa tất cả</button>
+                <button class="admin-btn" onclick="handleClearAll()" style="background: #dc3545;">🗑️ Xóa tất cả</button>
             </div>
             <div class="admin-list">
                 ${rsvps.length === 0 ? '<p style="text-align: center; padding: 40px; color: #6B6B6B;">Chưa có RSVP nào</p>' : 
@@ -1040,15 +1094,15 @@ function showAdminPanel() {
     document.body.appendChild(panel);
 }
 
-function updateAdminPanel() {
+async function updateAdminPanel() {
     const panel = document.getElementById('adminPanel');
     if (panel) {
         console.log('Updating admin panel with fresh data...');
         // Force remove existing panel and recreate with updated data
         panel.remove();
         // Small delay to ensure DOM is updated
-        setTimeout(() => {
-            showAdminPanel();
+        setTimeout(async () => {
+            await showAdminPanel();
         }, 100);
     } else {
         console.log('Admin panel not open, no update needed');
@@ -1088,20 +1142,48 @@ function debugLocalStorage() {
     console.log('Individual RSVP entries:', individualEntries);
     console.log('Individual entries count:', individualEntries.length);
     
-    // Get all RSVPs using getAllRSVPs
-    const allRSVPs = getAllRSVPs();
-    console.log('getAllRSVPs() result:', allRSVPs);
-    console.log('getAllRSVPs() count:', allRSVPs.length);
-    
-    // Get stats
-    const stats = getRSVPStats();
-    console.log('RSVP Stats:', stats);
-    
-    console.log('=== End Debug Info ===');
-    alert('Debug info đã được log vào Console (F12).\n\nTổng số RSVP: ' + allRSVPs.length + '\nSẽ tham dự: ' + stats.attending + '\nKhông tham dự: ' + stats.notAttending);
+    // Get all RSVPs using getAllRSVPs (async)
+    getAllRSVPs().then(allRSVPs => {
+        console.log('getAllRSVPs() result:', allRSVPs);
+        console.log('getAllRSVPs() count:', allRSVPs.length);
+        
+        // Get stats
+        return getRSVPStats();
+    }).then(stats => {
+        console.log('RSVP Stats:', stats);
+        console.log('=== End Debug Info ===');
+        alert('Debug info đã được log vào Console (F12).\n\nTổng số RSVP: ' + (stats?.total || 0) + '\nSẽ tham dự: ' + (stats?.attending || 0) + '\nKhông tham dự: ' + (stats?.notAttending || 0));
+    }).catch(error => {
+        console.error('Error in debug:', error);
+        console.log('=== End Debug Info ===');
+        alert('Có lỗi khi debug. Xem Console (F12) để biết chi tiết.');
+    });
 }
 
-function clearAllRSVPs() {
+// Wrapper functions for onclick handlers (to handle async)
+async function refreshAdminPanel() {
+    await showAdminPanel();
+}
+
+async function handleExportJSON() {
+    try {
+        await exportRSVPsToJSON();
+    } catch (error) {
+        console.error('Error exporting JSON:', error);
+        alert('Có lỗi khi xuất JSON. Vui lòng thử lại.');
+    }
+}
+
+async function handleExportCSV() {
+    try {
+        await exportRSVPsToCSV();
+    } catch (error) {
+        console.error('Error exporting CSV:', error);
+        alert('Có lỗi khi xuất CSV. Vui lòng thử lại.');
+    }
+}
+
+async function handleClearAll() {
     if (confirm('Bạn có chắc chắn muốn xóa TẤT CẢ dữ liệu RSVP? Hành động này không thể hoàn tác!')) {
         localStorage.removeItem('weddingRSVPs');
         // Clear individual entries
@@ -1111,9 +1193,13 @@ function clearAllRSVPs() {
                 localStorage.removeItem(key);
             }
         }
-        alert('Đã xóa tất cả dữ liệu RSVP!');
-        showAdminPanel();
+        alert('Đã xóa tất cả dữ liệu RSVP từ localStorage!\n\nLưu ý: Dữ liệu trên server (JSONBin.io) vẫn còn. Để xóa hoàn toàn, cần xóa trực tiếp trên JSONBin.io.');
+        await showAdminPanel();
     }
+}
+
+function clearAllRSVPs() {
+    handleClearAll();
 }
 
 // Calendar Widget - Render November 2025
