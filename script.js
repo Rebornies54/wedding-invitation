@@ -368,8 +368,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Verify it was saved
                 const allRSVPs = getAllRSVPs();
-                console.log('Total RSVPs in storage:', allRSVPs.length);
-                console.log('All RSVPs:', allRSVPs);
+                console.log('✅ Total RSVPs in storage:', allRSVPs.length);
+                console.log('✅ All RSVPs:', allRSVPs);
+                console.log('✅ Latest RSVP ID:', savedRSVP.id);
                 
                 // Show petals animation
                 createPetalsAnimation();
@@ -383,7 +384,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 rsvpForm.reset();
                 
                 // Update admin panel if visible
+                console.log('🔄 Attempting to update admin panel...');
                 updateAdminPanel();
+                console.log('✅ Admin panel update called');
             } catch (error) {
                 console.error('Error saving RSVP:', error);
                 console.error('Error details:', {
@@ -980,6 +983,9 @@ function showAdminPanel() {
                 <h2>📋 Danh Sách RSVP</h2>
                 <button class="admin-close" onclick="this.closest('#adminPanel').remove()">×</button>
             </div>
+            <div style="padding: 10px 20px; background: #fff3cd; border-bottom: 1px solid #ffc107; font-size: 12px; color: #856404;">
+                💡 <strong>Lưu ý:</strong> Dữ liệu được lưu trong localStorage của từng tab. Mỗi tab có dữ liệu riêng. Nếu không thấy RSVP mới, hãy click nút "🔄 Làm mới".
+            </div>
             <div class="admin-stats">
                 <div class="stat-item">
                     <span class="stat-label">Tổng số:</span>
@@ -999,6 +1005,7 @@ function showAdminPanel() {
                 </div>
             </div>
             <div class="admin-actions">
+                <button class="admin-btn" onclick="showAdminPanel()" style="background: #28a745;">🔄 Làm mới</button>
                 <button class="admin-btn" onclick="exportRSVPsToJSON()">📥 Xuất JSON</button>
                 <button class="admin-btn" onclick="exportRSVPsToCSV()">📊 Xuất CSV</button>
                 <button class="admin-btn" onclick="debugLocalStorage()" style="background: #6c757d;">🔍 Debug</button>
@@ -1036,9 +1043,15 @@ function showAdminPanel() {
 function updateAdminPanel() {
     const panel = document.getElementById('adminPanel');
     if (panel) {
+        console.log('Updating admin panel with fresh data...');
         // Force remove existing panel and recreate with updated data
         panel.remove();
-        showAdminPanel();
+        // Small delay to ensure DOM is updated
+        setTimeout(() => {
+            showAdminPanel();
+        }, 100);
+    } else {
+        console.log('Admin panel not open, no update needed');
     }
 }
 
