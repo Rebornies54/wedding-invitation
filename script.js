@@ -10,21 +10,21 @@ function createFloatingHearts() {
     const heartsContainer = document.getElementById('heartsContainer');
     if (!heartsContainer) return;
     
-    const heartCount = 35; // Tăng số lượng trái tim để lãng mạn hơn
+    const heartCount = 35;
     
-    // Create initial hearts với stagger timing ngắn hơn
+    // Create initial hearts with staggered timing
     for (let i = 0; i < heartCount; i++) {
         setTimeout(() => {
             createHeart(heartsContainer, true);
-        }, i * 800); // Tạo nhanh hơn để có nhiều hearts hơn
+        }, i * 800);
     }
     
-    // Continuously create new hearts - tần suất cao hơn
+    // Continuously create new hearts
     setInterval(() => {
         if (heartsContainer) {
             createHeart(heartsContainer, false);
         }
-    }, 1800); // Tạo hearts mới mỗi 1.8 giây thay vì 2.5 giây
+    }, 1800);
 }
 
 function createHeart(container, isInitial = false) {
@@ -33,7 +33,7 @@ function createHeart(container, isInitial = false) {
     const heart = document.createElement('div');
     heart.className = 'heart';
     
-    // Random size between 16px and 30px (đa dạng kích thước hơn)
+    // Random size between 16px and 30px
     const size = Math.random() * 14 + 16;
     heart.style.fontSize = size + 'px';
     
@@ -41,11 +41,11 @@ function createHeart(container, isInitial = false) {
     const startX = Math.random() * 100;
     heart.style.left = startX + '%';
     
-    // Random animation duration (15-25 seconds) - đa dạng tốc độ
+    // Random animation duration (15-25 seconds)
     const duration = Math.random() * 10 + 15;
     heart.style.animationDuration = duration + 's';
     
-    // Random delay để tạo hiệu ứng tự nhiên
+    // Random delay for natural effect
     const delay = Math.random() * 2;
     heart.style.animationDelay = delay + 's';
     
@@ -54,18 +54,18 @@ function createHeart(container, isInitial = false) {
     heart.style.color = colorData.color;
     heart.style.opacity = colorData.opacity;
     
-    // Add glow effect to more hearts (40% chance) để đẹp hơn
+    // Add glow effect to more hearts (40% chance)
     if (Math.random() < 0.4) {
         heart.classList.add('heart-glow');
     }
     
-    // Sin-wave path variation - đa dạng hơn
-    const waveAmplitude = Math.random() * 50 + 25; // Tăng amplitude
+    // Sin-wave path variation
+    const waveAmplitude = Math.random() * 50 + 25;
     const waveFrequency = Math.random() * 0.02 + 0.01;
     heart.setAttribute('data-wave-amp', waveAmplitude);
     heart.setAttribute('data-wave-freq', waveFrequency);
     
-    // Set initial position - bắt đầu từ dưới viewport
+    // Set initial position - start from below viewport
     const scrollY = window.pageYOffset || window.scrollY;
     const viewportHeight = window.innerHeight;
     heart.style.position = 'fixed';
@@ -98,7 +98,7 @@ function animateHeartWave(heart, amplitude, frequency, duration, delay) {
         const elapsed = (now - startTime) / 1000;
         const progress = elapsed / duration;
         
-        // Tính toán vị trí dựa trên scroll position để hearts bay trên toàn bộ trang
+        // Calculate position based on scroll to work across entire page
         const scrollY = window.pageYOffset || window.scrollY;
         const viewportHeight = window.innerHeight;
         const documentHeight = Math.max(
@@ -109,14 +109,14 @@ function animateHeartWave(heart, amplitude, frequency, duration, delay) {
             document.documentElement.offsetHeight
         );
         
-        // Hearts bay từ dưới viewport hiện tại lên trên
+        // Hearts float from below current viewport upward
         const startY = viewportHeight + scrollY;
-        const endY = scrollY - 100; // Bay lên trên viewport
+        const endY = scrollY - 100;
         const yPos = startY + (endY - startY) * progress;
         
         const xOffset = Math.sin(elapsed * frequency * 10) * amplitude;
         
-        // Cập nhật vị trí tuyệt đối để hearts bay trên toàn bộ document
+        // Update absolute position for hearts to float across entire document
         heart.style.position = 'fixed';
         heart.style.top = yPos + 'px';
         heart.style.transform = `translateX(${xOffset}px) rotate(${progress * 360}deg)`;
@@ -228,22 +228,21 @@ function exportRSVPsToJSON() {
 function exportRSVPsToCSV() {
     const rsvps = getAllRSVPs();
     
-    // Hỏi người dùng chọn delimiter
+    // Ask user to choose delimiter
     const delimiterChoice = confirm(
         'Chọn định dạng CSV:\n\n' +
         'OK = Dấu chấm phẩy (;) - Khuyến nghị cho Excel\n' +
         'Cancel = Dấu phẩy (,) - Chuẩn CSV'
     );
     
-    // Sử dụng dấu chấm phẩy (;) làm delimiter để Excel nhận diện đúng
-    // Hoặc có thể dùng tab (\t) cho Excel
-    const delimiter = delimiterChoice ? ';' : ','; // Excel thường nhận diện tốt hơn với dấu chấm phẩy
+    // Use semicolon (;) as delimiter for better Excel recognition
+    const delimiter = delimiterChoice ? ';' : ',';
     
-    // Escape function cho CSV
+    // Escape function for CSV
     function escapeCSV(value) {
         if (value === null || value === undefined) return '';
         const stringValue = String(value);
-        // Nếu có dấu phẩy, dấu chấm phẩy, dấu ngoặc kép, hoặc xuống dòng, cần đặt trong ngoặc kép
+        // If contains delimiter, quotes, or newlines, wrap in quotes
         if (stringValue.includes(delimiter) || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
             return '"' + stringValue.replace(/"/g, '""') + '"';
         }
@@ -252,10 +251,10 @@ function exportRSVPsToCSV() {
     
     const headers = ['ID', 'Thời gian', 'Tên', 'Số khách', 'Tham dự', 'Lời nhắn'];
     
-    // Tạo header row
+    // Create header row
     const headerRow = headers.map(escapeCSV).join(delimiter);
     
-    // Tạo data rows
+    // Create data rows
     const dataRows = rsvps.map(r => {
         return [
             r.id,
@@ -267,10 +266,10 @@ function exportRSVPsToCSV() {
         ].map(escapeCSV).join(delimiter);
     });
     
-    // Kết hợp tất cả
+    // Combine all rows
     const csvContent = [headerRow, ...dataRows].join('\r\n');
     
-    // Tạo BOM (Byte Order Mark) cho UTF-8 để Excel nhận diện encoding đúng
+    // Add BOM (Byte Order Mark) for UTF-8 to ensure Excel recognizes encoding
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { 
         type: 'text/csv;charset=utf-8;' 
@@ -306,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save to localStorage
             try {
                 const savedRSVP = saveRSVPData(data);
-                console.log('RSVP đã được lưu:', savedRSVP);
+                console.log('RSVP saved:', savedRSVP);
                 
                 // Show petals animation
                 createPetalsAnimation();
@@ -322,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update admin panel if visible
                 updateAdminPanel();
             } catch (error) {
-                console.error('Lỗi khi lưu RSVP:', error);
+                console.error('Error saving RSVP:', error);
                 alert('Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
             }
         });
@@ -571,10 +570,10 @@ function initMusicPlayer() {
                 }
                 isPlaying = true;
                 updatePlayerUI();
-                console.log('Nhạc đã tự động phát');
+                console.log('Music auto-played');
             }).catch((error) => {
                 // Auto-play was prevented - try again on first user interaction
-                console.log('Auto-play bị chặn, sẽ phát khi người dùng tương tác');
+                console.log('Auto-play blocked, will play on user interaction');
                 
                 const enableOnInteraction = () => {
                     audio.currentTime = START_TIME;
@@ -582,7 +581,7 @@ function initMusicPlayer() {
                         isPlaying = true;
                         updatePlayerUI();
                     }).catch(() => {
-                        console.log('Vẫn không thể phát tự động');
+                        console.log('Still cannot auto-play');
                     });
                 };
                 
@@ -635,7 +634,7 @@ function initMusicPlayer() {
     
     // Ensure we never go before START_TIME (safety check)
     audio.addEventListener('timeupdate', () => {
-        // If somehow we're before START_TIME (but not at the very beginning), reset
+        // If somehow before START_TIME (but not at the very beginning), reset
         if (audio.currentTime < START_TIME && audio.currentTime > 0.5 && audio.readyState >= 2) {
             audio.currentTime = START_TIME;
         }
@@ -645,7 +644,7 @@ function initMusicPlayer() {
 function toggleMusic() {
     if (!audio) return;
     
-    const START_TIME = 13; // Bắt đầu từ giây thứ 13
+    const START_TIME = 13; // Start from 13th second
     
     if (isPlaying) {
         audio.pause();
@@ -663,7 +662,7 @@ function toggleMusic() {
             isPlaying = true;
         }).catch((error) => {
             console.error('Error playing audio:', error);
-            alert('Không thể phát nhạc. Vui lòng kiểm tra kết nối hoặc file nhạc.');
+            alert('Cannot play music. Please check connection or audio file.');
         });
     }
     

@@ -326,7 +326,7 @@ body::before {
     font-family: 'Dancing Script', cursive;
     font-size: 56px;
     font-weight: 700;
-    /* Gold/Olive-green gradient như trong hình */
+    /* Gold/Olive-green gradient */
     background: linear-gradient(135deg, #B8860B 0%, #8B7355 30%, #DAA520 60%, #8B7355 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -939,7 +939,7 @@ section {
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
 
-/* Desktop hover effect - ảnh nổi lên và zoom lớn */
+/* Desktop hover effect - image lifts and zooms */
 @media (hover: hover) and (pointer: fine) {
     .gallery-item:hover {
         transform: translateY(-20px) scale(1.25);
