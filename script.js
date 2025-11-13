@@ -252,7 +252,10 @@ function getRSVPStats() {
     const rsvps = getAllRSVPs();
     const attending = rsvps.filter(r => r.attending === 'yes');
     const notAttending = rsvps.filter(r => r.attending === 'no');
-    const totalGuests = attending.reduce((sum, r) => sum + r.guests, 0);
+    const totalGuests = attending.reduce((sum, r) => {
+        const guests = parseInt(r.guests) || 0;
+        return sum + guests;
+    }, 0);
     
     return {
         total: rsvps.length,
@@ -915,22 +918,58 @@ function showAdminLogin() {
     }
 }
 
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function showAdminPanel() {
     // Remove existing panel if any
     const existingPanel = document.getElementById('adminPanel');
     if (existingPanel) {
         existingPanel.remove();
-        return;
     }
     
+    // Always fetch fresh data
     const rsvps = getAllRSVPs();
+    console.log('=== Admin Panel Debug ===');
+    console.log('Total RSVPs loaded:', rsvps.length);
+    console.log('RSVPs data:', JSON.stringify(rsvps, null, 2));
+    
     // Sort by timestamp (newest first)
+    // Use id (timestamp) as primary, fallback to timestamp string, then to 0
     rsvps.sort((a, b) => {
-        const timeA = a.id || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
-        const timeB = b.id || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
-        return timeB - timeA;
+        let timeA = 0;
+        if (a.id) {
+            timeA = a.id;
+        } else if (a.timestamp) {
+            try {
+                timeA = new Date(a.timestamp).getTime();
+            } catch (e) {
+                timeA = 0;
+            }
+        }
+        
+        let timeB = 0;
+        if (b.id) {
+            timeB = b.id;
+        } else if (b.timestamp) {
+            try {
+                timeB = new Date(b.timestamp).getTime();
+            } catch (e) {
+                timeB = 0;
+            }
+        }
+        
+        return timeB - timeA; // Newest first
     });
+    
     const stats = getRSVPStats();
+    console.log('RSVP Stats:', stats);
+    console.log('=== End Admin Panel Debug ===');
     
     const panel = document.createElement('div');
     panel.id = 'adminPanel';
@@ -967,19 +1006,26 @@ function showAdminPanel() {
             </div>
             <div class="admin-list">
                 ${rsvps.length === 0 ? '<p style="text-align: center; padding: 40px; color: #6B6B6B;">Chưa có RSVP nào</p>' : 
-                    rsvps.map(rsvp => `
+                    rsvps.map(rsvp => {
+                        const name = escapeHtml(String(rsvp.name || 'Không có tên').trim());
+                        const date = escapeHtml(String(rsvp.date || 'Không có ngày').trim());
+                        const guests = parseInt(rsvp.guests) || 0;
+                        const attending = rsvp.attending === 'yes' ? '✅ Có' : '❌ Không';
+                        const message = rsvp.message ? escapeHtml(String(rsvp.message).trim()) : '';
+                        return `
                         <div class="rsvp-item ${rsvp.attending === 'yes' ? 'attending' : 'not-attending'}">
                             <div class="rsvp-header">
-                                <strong>${rsvp.name}</strong>
-                                <span class="rsvp-date">${rsvp.date}</span>
+                                <strong>${name}</strong>
+                                <span class="rsvp-date">${date}</span>
                             </div>
                             <div class="rsvp-details">
-                                <span>Số khách: <strong>${rsvp.guests}</strong></span>
-                                <span>Tham dự: <strong>${rsvp.attending === 'yes' ? '✅ Có' : '❌ Không'}</strong></span>
+                                <span>Số khách: <strong>${guests}</strong></span>
+                                <span>Tham dự: <strong>${attending}</strong></span>
                             </div>
-                            ${rsvp.message ? `<div class="rsvp-message">"${rsvp.message}"</div>` : ''}
+                            ${message ? `<div class="rsvp-message">"${message}"</div>` : ''}
                         </div>
-                    `).join('')
+                    `;
+                    }).join('')
                 }
             </div>
         </div>
