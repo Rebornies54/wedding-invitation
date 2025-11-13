@@ -1,4 +1,6 @@
-// Vercel Serverless Function to get all RSVPs from JSONBin.io
+// Vercel Serverless Function to get all RSVPs from MySQL database
+
+import mysql from 'mysql2/promise';
 
 export default async function handler(req, res) {
     // Only allow GET requests
@@ -7,37 +9,44 @@ export default async function handler(req, res) {
     }
 
     try {
-        const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
-        const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
+        // Get database connection from environment variables
+        const dbConfig = {
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+        };
 
-        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
+        // Check if database is configured
+        if (!dbConfig.host || !dbConfig.user || !dbConfig.database) {
             return res.status(200).json({ 
                 success: true, 
                 data: [],
-                message: 'JSONBin.io not configured'
+                message: 'MySQL not configured'
             });
         }
 
-        // Get RSVPs from JSONBin.io
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: {
-                'X-Master-Key': JSONBIN_API_KEY
-            }
-        });
+        // Create connection
+        const connection = await mysql.createConnection(dbConfig);
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch from JSONBin.io');
-        }
+        // Get all RSVPs, ordered by newest first
+        const [rows] = await connection.execute(
+            'SELECT * FROM rsvps ORDER BY created_at DESC'
+        );
 
-        const binData = await response.json();
-        const rsvps = binData.record || [];
+        await connection.end();
 
-        // Sort by timestamp (newest first)
-        rsvps.sort((a, b) => {
-            const timeA = a.id || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
-            const timeB = b.id || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
-            return timeB - timeA;
-        });
+        // Format data
+        const rsvps = rows.map(row => ({
+            id: row.id,
+            timestamp: row.created_at.toISOString(),
+            date: new Date(row.created_at).toLocaleString('vi-VN'),
+            name: row.name,
+            guests: row.guests,
+            attending: row.attending,
+            message: row.message || ''
+        }));
 
         return res.status(200).json({ 
             success: true, 

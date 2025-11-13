@@ -1,5 +1,7 @@
-// Vercel Serverless Function to save RSVP to JSONBin.io
-// This allows centralized storage of RSVPs from all users
+// Vercel Serverless Function to save RSVP to MySQL database
+// Using PlanetScale (MySQL-compatible) or any MySQL database
+
+import mysql from 'mysql2/promise';
 
 export default async function handler(req, res) {
     // Only allow POST requests
@@ -15,64 +17,61 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Create RSVP entry
-        const rsvpEntry = {
-            id: Date.now(),
-            timestamp: new Date().toISOString(),
-            date: new Date().toLocaleString('vi-VN'),
-            name: String(name).trim(),
-            guests: parseInt(guests) || 1,
-            attending: attending,
-            message: (message || '').trim()
+        // Get database connection from environment variables
+        const dbConfig = {
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
         };
 
-        // Save to JSONBin.io
-        // You need to create a bin at https://jsonbin.io and get your API key
-        const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
-        const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
-
-        if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-            // Fallback: return the entry (you can save it manually or use another service)
+        // Check if database is configured
+        if (!dbConfig.host || !dbConfig.user || !dbConfig.database) {
             return res.status(200).json({ 
                 success: true, 
-                data: rsvpEntry,
-                message: 'RSVP saved (local only - configure JSONBin.io for centralized storage)'
+                data: {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    date: new Date().toLocaleString('vi-VN'),
+                    name: String(name).trim(),
+                    guests: parseInt(guests) || 1,
+                    attending: attending,
+                    message: (message || '').trim()
+                },
+                message: 'RSVP saved (local only - configure MySQL for centralized storage)'
             });
         }
 
-        // Get existing RSVPs from JSONBin.io
-        const getResponse = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: {
-                'X-Master-Key': JSONBIN_API_KEY
-            }
-        });
+        // Create connection
+        const connection = await mysql.createConnection(dbConfig);
 
-        let existingRSVPs = [];
-        if (getResponse.ok) {
-            const binData = await getResponse.json();
-            existingRSVPs = binData.record || [];
-        }
+        // Insert RSVP into database
+        const [result] = await connection.execute(
+            `INSERT INTO rsvps (name, guests, attending, message, created_at) 
+             VALUES (?, ?, ?, ?, NOW())`,
+            [String(name).trim(), parseInt(guests) || 1, attending, (message || '').trim()]
+        );
 
-        // Add new RSVP
-        existingRSVPs.push(rsvpEntry);
+        // Get the inserted record
+        const [rows] = await connection.execute(
+            'SELECT * FROM rsvps WHERE id = ?',
+            [result.insertId]
+        );
 
-        // Save back to JSONBin.io
-        const putResponse = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_API_KEY
-            },
-            body: JSON.stringify(existingRSVPs)
-        });
-
-        if (!putResponse.ok) {
-            throw new Error('Failed to save to JSONBin.io');
-        }
+        await connection.end();
 
         return res.status(200).json({ 
             success: true, 
-            data: rsvpEntry,
+            data: {
+                id: rows[0].id,
+                timestamp: rows[0].created_at.toISOString(),
+                date: new Date(rows[0].created_at).toLocaleString('vi-VN'),
+                name: rows[0].name,
+                guests: rows[0].guests,
+                attending: rows[0].attending,
+                message: rows[0].message || ''
+            },
             message: 'RSVP saved successfully'
         });
 
