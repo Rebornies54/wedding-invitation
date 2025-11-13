@@ -196,7 +196,35 @@ function saveRSVPData(data) {
 }
 
 function getAllRSVPs() {
-    return JSON.parse(localStorage.getItem('weddingRSVPs') || '[]');
+    try {
+        const data = localStorage.getItem('weddingRSVPs');
+        if (!data) return [];
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Error reading RSVPs from localStorage:', error);
+        // If corrupted, try to recover individual entries
+        const recovered = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('rsvp_')) {
+                try {
+                    const entry = JSON.parse(localStorage.getItem(key));
+                    if (entry && entry.id) {
+                        recovered.push(entry);
+                    }
+                } catch (e) {
+                    console.error('Error recovering RSVP entry:', key, e);
+                }
+            }
+        }
+        // Save recovered data
+        if (recovered.length > 0) {
+            recovered.sort((a, b) => (a.id || 0) - (b.id || 0));
+            localStorage.setItem('weddingRSVPs', JSON.stringify(recovered));
+        }
+        return recovered;
+    }
 }
 
 function getRSVPStats() {
@@ -858,6 +886,12 @@ function showAdminPanel() {
     }
     
     const rsvps = getAllRSVPs();
+    // Sort by timestamp (newest first)
+    rsvps.sort((a, b) => {
+        const timeA = a.id || (a.timestamp ? new Date(a.timestamp).getTime() : 0);
+        const timeB = b.id || (b.timestamp ? new Date(b.timestamp).getTime() : 0);
+        return timeB - timeA;
+    });
     const stats = getRSVPStats();
     
     const panel = document.createElement('div');
@@ -917,6 +951,8 @@ function showAdminPanel() {
 function updateAdminPanel() {
     const panel = document.getElementById('adminPanel');
     if (panel) {
+        // Force remove existing panel and recreate with updated data
+        panel.remove();
         showAdminPanel();
     }
 }
