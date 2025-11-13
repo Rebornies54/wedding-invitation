@@ -23,7 +23,7 @@
 }
 
 body {
-    font-family: 'Lato', 'Cormorant Garamond', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Lato', 'Cormorant Garamond', 'Helvetica Neue', Arial, sans-serif;
     color: var(--text-dark);
     background: linear-gradient(180deg, var(--soft-beige) 0%, var(--light-beige) 50%, var(--white) 100%);
     background-attachment: fixed;
@@ -33,6 +33,8 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    font-size: 16px;
+    line-height: 1.6;
 }
 
 /* Prevent horizontal scroll on all devices */
@@ -416,7 +418,7 @@ body::before {
 }
 
 .subtitle {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Playfair Display', 'Segoe UI', serif;
     font-size: 18px;
     font-weight: 400;
     color: var(--text-light);
@@ -424,6 +426,7 @@ body::before {
     letter-spacing: 8px;
     margin-bottom: 25px;
     text-shadow: 0 0.5px 1px rgba(107, 107, 107, 0.2);
+    -webkit-font-smoothing: antialiased;
 }
 
 .divider {
@@ -453,13 +456,14 @@ body::before {
 }
 
 .invitation-text {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Cormorant Garamond', 'Segoe UI', serif;
     font-size: 18px;
     line-height: 1.8;
     color: var(--text-dark);
     margin-bottom: 30px;
     font-style: italic;
     text-shadow: 0 0.5px 1px rgba(58, 58, 58, 0.1);
+    -webkit-font-smoothing: antialiased;
 }
 
 .date-venue {
@@ -592,7 +596,7 @@ section {
 }
 
 .section-title {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Playfair Display', 'Segoe UI', serif;
     font-size: 42px;
     font-weight: 600;
     color: var(--deep-red);
@@ -601,6 +605,7 @@ section {
     text-transform: uppercase;
     letter-spacing: 3px;
     position: relative;
+    -webkit-font-smoothing: antialiased;
 }
 
 .section-title::after {
@@ -875,23 +880,26 @@ section {
 }
 
 .detail-card h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 26px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Playfair Display', 'Segoe UI', serif;
+    font-size: 24px;
     font-weight: 700;
     color: var(--deep-red);
     margin-bottom: 18px;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     text-shadow: 0 1px 2px rgba(139, 38, 53, 0.1);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.4;
 }
 
 .detail-card p {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Cormorant Garamond', 'Segoe UI', serif;
+    font-size: 17px;
     font-weight: 500;
     color: var(--text-dark);
     margin: 10px 0;
-    line-height: 1.8;
-    letter-spacing: 0.3px;
+    line-height: 1.7;
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
 }
 
 .detail-card .location {
@@ -900,13 +908,6 @@ section {
     font-size: 16px;
     font-weight: 500;
     margin-top: 12px;
-}
-
-.dress-note {
-    font-size: 16px;
-    color: var(--text-dark);
-    font-style: italic;
-    font-weight: 500;
     line-height: 1.7;
 }
 
@@ -1689,10 +1690,6 @@ section {
         font-size: 15px;
     }
     
-    .dress-note {
-        font-size: 15px;
-    }
-
     .card-icon {
         width: 50px;
         height: 50px;
@@ -2236,6 +2233,56 @@ a:hover::after {
     
     .invitation-card .cta-buttons {
         margin-top: 20px;
+    }
+}
+
+/* iOS Font Improvements */
+@supports (-webkit-touch-callout: none) {
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Lato', 'Helvetica Neue', Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .detail-card h3 {
+        font-family: -apple-system, BlinkMacSystemFont, 'Playfair Display', 'Segoe UI', serif;
+        font-size: 23px;
+        font-weight: 600;
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    .detail-card p {
+        font-family: -apple-system, BlinkMacSystemFont, 'Cormorant Garamond', 'Segoe UI', serif;
+        font-size: 16px;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.75;
+    }
+    
+    .detail-card .location {
+        font-size: 15px;
+        line-height: 1.7;
+    }
+    
+    .section-title {
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    h1, h2, h3 {
+        -webkit-font-smoothing: antialiased;
+    }
+}
+
+/* iOS Safari specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    .detail-card {
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    .detail-card h3,
+    .detail-card p {
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
     }
 }
 

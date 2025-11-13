@@ -36,27 +36,46 @@ export default async function handler(req, res) {
         }
 
         // Send data to Google Apps Script
+        const requestBody = {
+            action: 'save',
+            data: {
+                name: String(name).trim(),
+                guests: parseInt(guests) || 1,
+                attending: attending,
+                message: (message || '').trim()
+            }
+        };
+
+        console.log('Sending to Google Apps Script:', GOOGLE_SCRIPT_URL);
+        console.log('Request body:', JSON.stringify(requestBody));
+
         const response = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                action: 'save',
-                data: {
-                    name: String(name).trim(),
-                    guests: parseInt(guests) || 1,
-                    attending: attending,
-                    message: (message || '').trim()
-                }
-            })
+            body: JSON.stringify(requestBody)
         });
 
+        console.log('Google Apps Script response status:', response.status);
+        const responseText = await response.text();
+        console.log('Google Apps Script response:', responseText);
+
         if (!response.ok) {
-            throw new Error('Failed to save to Google Sheets');
+            throw new Error(`Failed to save to Google Sheets: ${response.status} - ${responseText}`);
         }
 
-        const result = await response.json();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse response as JSON:', e);
+            throw new Error(`Invalid response from Google Sheets: ${responseText}`);
+        }
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to save to Google Sheets');
+        }
 
         return res.status(200).json({ 
             success: true, 

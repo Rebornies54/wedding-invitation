@@ -23,11 +23,25 @@ export default async function handler(req, res) {
             method: 'GET'
         });
 
+        console.log('Google Apps Script GET response status:', response.status);
+        const responseText = await response.text();
+        console.log('Google Apps Script GET response:', responseText);
+
         if (!response.ok) {
-            throw new Error('Failed to fetch from Google Sheets');
+            throw new Error(`Failed to fetch from Google Sheets: ${response.status} - ${responseText}`);
         }
 
-        const result = await response.json();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse response as JSON:', e);
+            throw new Error(`Invalid response from Google Sheets: ${responseText}`);
+        }
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to fetch from Google Sheets');
+        }
 
         // Format data
         const rsvps = (result.data || []).map(row => ({

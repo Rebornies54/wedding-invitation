@@ -90,71 +90,122 @@ function doGet(e) {
 }
 
 function saveRSVP(data) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  
-  // Tìm dòng trống tiếp theo
-  const lastRow = sheet.getLastRow();
-  const newRow = lastRow + 1;
-  
-  // Tạo ID và timestamp
-  const id = Date.now();
-  const timestamp = new Date().toISOString();
-  const date = new Date().toLocaleString('vi-VN');
-  
-  // Ghi dữ liệu vào sheet
-  sheet.getRange(newRow, 1).setValue(id); // ID
-  sheet.getRange(newRow, 2).setValue(timestamp); // Timestamp
-  sheet.getRange(newRow, 3).setValue(date); // Date
-  sheet.getRange(newRow, 4).setValue(data.name); // Name
-  sheet.getRange(newRow, 5).setValue(data.guests); // Guests
-  sheet.getRange(newRow, 6).setValue(data.attending); // Attending
-  sheet.getRange(newRow, 7).setValue(data.message || ''); // Message
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    success: true,
-    data: {
-      id: id,
-      timestamp: timestamp,
-      date: date,
-      name: data.name,
-      guests: data.guests,
-      attending: data.attending,
-      message: data.message || ''
+  try {
+    // Validate data
+    if (!data || !data.name || !data.attending) {
+      throw new Error('Missing required fields: name and attending are required');
     }
-  })).setMimeType(ContentService.MimeType.JSON);
+    
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      throw new Error('Sheet "' + SHEET_NAME + '" not found. Available sheets: ' + 
+        SpreadsheetApp.getActiveSpreadsheet().getSheets().map(s => s.getName()).join(', '));
+    }
+    
+    // Tìm dòng trống tiếp theo
+    const lastRow = sheet.getLastRow();
+    const newRow = lastRow + 1;
+    
+    // Tạo ID và timestamp
+    const id = Date.now();
+    const timestamp = new Date().toISOString();
+    const date = new Date().toLocaleString('vi-VN');
+    
+    // Ghi dữ liệu vào sheet
+    sheet.getRange(newRow, 1).setValue(id); // ID
+    sheet.getRange(newRow, 2).setValue(timestamp); // Timestamp
+    sheet.getRange(newRow, 3).setValue(date); // Date
+    sheet.getRange(newRow, 4).setValue(String(data.name).trim()); // Name
+    sheet.getRange(newRow, 5).setValue(parseInt(data.guests) || 1); // Guests
+    sheet.getRange(newRow, 6).setValue(String(data.attending)); // Attending
+    sheet.getRange(newRow, 7).setValue(String(data.message || '').trim()); // Message
+    
+    // Verify data was written
+    const writtenData = sheet.getRange(newRow, 1, 1, 7).getValues()[0];
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      data: {
+        id: id,
+        timestamp: timestamp,
+        date: date,
+        name: data.name,
+        guests: parseInt(data.guests) || 1,
+        attending: data.attending,
+        message: data.message || ''
+      },
+      debug: {
+        row: newRow,
+        written: writtenData
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    Logger.log('Error in saveRSVP: ' + error.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString(),
+      message: 'Failed to save RSVP to Google Sheets'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function getAllRSVPs() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  const lastRow = sheet.getLastRow();
-  
-  if (lastRow <= 1) {
-    // Chỉ có header, không có data
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      throw new Error('Sheet "' + SHEET_NAME + '" not found');
+    }
+    
+    const lastRow = sheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      // Chỉ có header, không có data
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: [],
+        debug: {
+          lastRow: lastRow,
+          sheetName: SHEET_NAME
+        }
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Lấy tất cả data (bỏ qua header row)
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, 7);
+    const values = dataRange.getValues();
+    
+    // Format data
+    const rsvps = values.map((row, index) => ({
+      id: row[0],
+      timestamp: row[1],
+      date: row[2],
+      name: row[3] || '',
+      guests: parseInt(row[4]) || 0,
+      attending: row[5] || '',
+      message: row[6] || ''
+    })).filter(row => row.id && row.name); // Filter out empty rows
+    
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
+      data: rsvps,
+      debug: {
+        lastRow: lastRow,
+        totalRows: values.length,
+        filteredRows: rsvps.length
+      }
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    Logger.log('Error in getAllRSVPs: ' + error.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString(),
       data: []
     })).setMimeType(ContentService.MimeType.JSON);
   }
-  
-  // Lấy tất cả data (bỏ qua header row)
-  const dataRange = sheet.getRange(2, 1, lastRow - 1, 7);
-  const values = dataRange.getValues();
-  
-  // Format data
-  const rsvps = values.map(row => ({
-    id: row[0],
-    timestamp: row[1],
-    date: row[2],
-    name: row[3],
-    guests: row[4],
-    attending: row[5],
-    message: row[6] || ''
-  }));
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    success: true,
-    data: rsvps
-  })).setMimeType(ContentService.MimeType.JSON);
 }
 ```
 
